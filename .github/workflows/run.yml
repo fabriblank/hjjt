@@ -1,4 +1,4 @@
-name: Greenboy Cloud PC
+name: RDP-Larger-Runner
 
 on:
   workflow_dispatch:
@@ -11,11 +11,11 @@ jobs:
     steps:
       - name: Display System Information
         run: |
-          Write-Host "=== GREENBOY CLOUD PC INFO ==="
+          Write-Host "=== SYSTEM INFORMATION ==="
           Get-ComputerInfo | Select-Object CsName, CsNumberOfProcessors, CsNumberOfLogicalProcessors, CsTotalPhysicalMemory, OsArchitecture
           Write-Host "`nDisk Space:"
           Get-PSDrive C | Select-Object Name, @{N="Used(GB)";E={[math]::Round($_.Used/1GB,2)}}, @{N="Free(GB)";E={[math]::Round($_.Free/1GB,2)}}, @{N="Total(GB)";E={[math]::Round(($_.Used+$_.Free)/1GB,2)}}
-          Write-Host "================================`n"
+          Write-Host "==========================`n"
 
       - name: Configure Core RDP Settings
         run: |
@@ -54,28 +54,17 @@ jobs:
       - name: Connect to Tailscale
         uses: tailscale/github-action@v4
         with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:greenboy  # Phải khớp tag bạn tạo ở bước 1
+          authkey: ${{ secrets.TAILSCALE_AUTH_KEY }}
 
       - name: Get Tailscale IP
         run: |
-          $retry = 0
-          $tsIP = $null
-          while ($retry -lt 30 -and -not $tsIP) {
-              $tsIP = tailscale ip -4
-              if ($tsIP) {
-                  echo "TAILSCALE_IP=$tsIP" >> $env:GITHUB_ENV
-                  Write-Host "Tailscale IP: $tsIP"
-              } else {
-                  Start-Sleep -Seconds 10
-                  $retry++
-              }
-          }
+          $tsIP = tailscale ip -4
           if (-not $tsIP) {
               Write-Error "Failed to get Tailscale IP"
               exit 1
           }
+          echo "TAILSCALE_IP=$tsIP" >> $env:GITHUB_ENV
+          Write-Host "Tailscale IP: $tsIP"
 
       - name: Verify RDP Accessibility
         run: |
@@ -86,40 +75,16 @@ jobs:
           }
           Write-Host "RDP connectivity OK!"
 
-      - name: Set Greenboy Cloud PC Wallpaper (hình xanh cũ đẹp)
-        run: |
-          # Hình cánh đồng xanh lá mây trời bạn gửi (siêu chill)
-          $url = "https://img.pconline.com.cn/images/upload/upc/tx/wallpaper/1305/16/c2/21234567_1368776789333.jpg"  # Link ổn định giống hình cũ
-          $wallpaperPath = "$env:USERPROFILE\Pictures\greenboy-old-wallpaper.jpg"
-          
-          Invoke-WebRequest -Uri $url -OutFile $wallpaperPath
-          
-          Set-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -Name WallpaperStyle -Value 10
-          Set-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -Name TileWallpaper -Value 0
-          
-          Add-Type -TypeDefinition @"
-          using System;
-          using System.Runtime.InteropServices;
-          public class Wallpaper {
-              [DllImport("user32.dll", CharSet = CharSet.Auto)]
-              public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
-          }
-"@ 
-          [Wallpaper]::SystemParametersInfo(20, 0, $wallpaperPath, 3)
-          
-          Write-Host "Wallpaper xanh cũ đẹp lung linh đã set! 💚☁️"
-
       - name: Maintain Connection
         run: |
-          Write-Host "`n=== GREENBOY CLOUD PC READY ==="
+          Write-Host "`n=== RDP ACCESS READY ==="
           Write-Host "Tailscale IP: $env:TAILSCALE_IP"
           Write-Host "$env:RDP_CREDS"
-          Write-Host "Wallpaper: Hình xanh cũ chill max"
-          Write-Host "Specs: 4 vCPU | 16GB RAM | ~150GB free"
-          Write-Host "Connect RDP qua Tailscale ngay! 🚀"
+          Write-Host "Specs: 4 vCPU | 16GB RAM | ~150GB free disk"
+          Write-Host "Connect via Tailscale network with RDP client"
           Write-Host "========================================`n"
           
           while ($true) {
-              Write-Host "[$(Get-Date)] Greenboy Cloud PC active - Cancel workflow để stop"
+              Write-Host "[$(Get-Date)] Runner active - Cancel workflow to stop"
               Start-Sleep -Seconds 300
           }
