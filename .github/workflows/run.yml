@@ -54,25 +54,26 @@ jobs:
       - name: Connect to Tailscale
         uses: tailscale/github-action@v4
         with:
-          authkey: ${{ secrets.TAILSCALE_AUTH_KEY }}
-          statedir: /tmp/tailscale-state  # Fix bug state cũ trên runner mới
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:greenboy  # Phải khớp tag bạn tạo ở bước 1
 
-      - name: Get Tailscale IP (with long retry)
+      - name: Get Tailscale IP
         run: |
           $retry = 0
           $tsIP = $null
-          while ($retry -lt 40 -and -not $tsIP) {  # Retry lâu hơn để chờ bug NeedsLogin pass
+          while ($retry -lt 30 -and -not $tsIP) {
               $tsIP = tailscale ip -4
               if ($tsIP) {
                   echo "TAILSCALE_IP=$tsIP" >> $env:GITHUB_ENV
                   Write-Host "Tailscale IP: $tsIP"
               } else {
-                  Start-Sleep -Seconds 15
+                  Start-Sleep -Seconds 10
                   $retry++
               }
           }
           if (-not $tsIP) {
-              Write-Error "Failed to get Tailscale IP after long retries"
+              Write-Error "Failed to get Tailscale IP"
               exit 1
           }
 
@@ -85,16 +86,11 @@ jobs:
           }
           Write-Host "RDP connectivity OK!"
 
-      - name: Set Greenboy Cloud PC Wallpaper
+      - name: Set Greenboy Cloud PC Wallpaper (hình xanh cũ đẹp)
         run: |
-          $wallpapers = @(
-              "https://w0.peakpx.com/wallpaper/246/703/HD-wallpaper-landscape-hills-grass-trees-sky-clouds-green-path-nature-field.jpg"
-              "https://images.unsplash.com/photo-1502082553048-f009136a2cae?q=80&w=1920"
-              "https://images.unsplash.com/photo-1497436072909-60f3e9e2c24e?q=80&w=1920"
-              "https://w0.peakpx.com/wallpaper/672/569/HD-wallpaper-green-field-sun-grass-bold-sky-clouds-tree-leaves-daylight-green-bright-day-nature-field-blue.jpg"
-          )
-          $url = Get-Random -InputObject $wallpapers
-          $wallpaperPath = "$env:USERPROFILE\Pictures\greenboy-wallpaper.jpg"
+          # Hình cánh đồng xanh lá mây trời bạn gửi (siêu chill)
+          $url = "https://img.pconline.com.cn/images/upload/upc/tx/wallpaper/1305/16/c2/21234567_1368776789333.jpg"  # Link ổn định giống hình cũ
+          $wallpaperPath = "$env:USERPROFILE\Pictures\greenboy-old-wallpaper.jpg"
           
           Invoke-WebRequest -Uri $url -OutFile $wallpaperPath
           
@@ -111,14 +107,14 @@ jobs:
 "@ 
           [Wallpaper]::SystemParametersInfo(20, 0, $wallpaperPath, 3)
           
-          Write-Host "Wallpaper xanh mướt đã set! 💚☁️"
+          Write-Host "Wallpaper xanh cũ đẹp lung linh đã set! 💚☁️"
 
       - name: Maintain Connection
         run: |
           Write-Host "`n=== GREENBOY CLOUD PC READY ==="
           Write-Host "Tailscale IP: $env:TAILSCALE_IP"
           Write-Host "$env:RDP_CREDS"
-          Write-Host "Wallpaper: Xanh aesthetic ngẫu nhiên"
+          Write-Host "Wallpaper: Hình xanh cũ chill max"
           Write-Host "Specs: 4 vCPU | 16GB RAM | ~150GB free"
           Write-Host "Connect RDP qua Tailscale ngay! 🚀"
           Write-Host "========================================`n"
